@@ -1,5 +1,5 @@
 import socket
-import RequestUtils
+from . import RequestUtils
 import ssl
 import sys
 import gzip
