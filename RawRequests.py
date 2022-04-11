@@ -92,10 +92,10 @@ def send_raw(raw_request, port, host, timeout, use_ssl):
                             data += response_body
                             break
             except Exception as error:
-                print('send_raw  =>  ' + str(error))
-                data = None
-                
-        
+                if "The read operation timed out" not in error:
+                    print('send_raw  =>  ' + str(error))
+
+
         w_socket.close()
 
         return data
