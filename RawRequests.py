@@ -75,6 +75,27 @@ def send_raw(raw_request, port, host, timeout, use_ssl):
 
         w_socket.send(bytes(raw_request, encoding="latin1"))
         data = w_socket.recv(14096).decode("latin1")
+        
+        if "transfer-encoding: chunked" in data.lower():
+            while True:
+                data += w_socket.recv(14096).decode("latin1")
+                if "0\r\n\r\n" in data:
+                    break
+        elif "content-length: " in data.lower():
+            try:
+                data_length = int(data.lower().split("content-length: ")[1].split("\r\n")[0])
+                if data_length > 0:
+                    response_body = ""
+                    while True:
+                        response_body += w_socket.recv(14096).decode("latin1")
+                        if len(response_body) == data_length:
+                            data += response_body
+                            break
+            except Exception as error:
+                print('send_raw  =>  ' + str(error))
+                data = None
+                
+        
         w_socket.close()
 
         return data
