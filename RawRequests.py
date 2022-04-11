@@ -74,11 +74,11 @@ def send_raw(raw_request, port, host, timeout, use_ssl):
             w_socket.connect((host, int(port)))
 
         w_socket.send(bytes(raw_request, encoding="latin1"))
-        data = w_socket.recv(14096).decode("latin1")
+        data = w_socket.recv(4096).decode("latin1")
         
         if "transfer-encoding: chunked" in data.lower():
             while True:
-                data += w_socket.recv(14096).decode("latin1")
+                data += w_socket.recv(4096).decode("latin1")
                 if "0\r\n\r\n" in data:
                     break
         elif "content-length: " in data.lower():
@@ -87,7 +87,7 @@ def send_raw(raw_request, port, host, timeout, use_ssl):
                 if data_length > 0:
                     response_body = ""
                     while True:
-                        response_body += w_socket.recv(14096).decode("latin1")
+                        response_body += w_socket.recv(4096).decode("latin1")
                         if len(response_body) == data_length:
                             data += response_body
                             break
