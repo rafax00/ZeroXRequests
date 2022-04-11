@@ -74,7 +74,7 @@ def send_raw(raw_request, port, host, timeout, use_ssl):
             w_socket.connect((host, int(port)))
 
         w_socket.send(bytes(raw_request, encoding="latin1"))
-        data = w_socket.recv(4096).decode("latin1")
+        data = w_socket.recv(14096).decode("latin1")
         w_socket.close()
 
         return data
