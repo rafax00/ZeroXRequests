@@ -3,8 +3,12 @@ from . import RequestUtils
 import ssl
 import sys
 import gzip
+from pebble import concurrent
 
 line_separator = "\r\n"
+
+class Options():
+    timeout = 7
 
 def exception(message, function):
     message = str(function) + " => " + str(message)
@@ -56,51 +60,58 @@ def gzip_decode(data):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
+@concurrent.process(timeout=Options.timeout)
+def send_raw_with_exceptions(raw_request, port, host, timeout, use_ssl):
+    if use_ssl:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.verify_mode = ssl.CERT_REQUIRED
+        context.check_hostname = True
+        context.load_default_certs()
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        w_socket = context.wrap_socket(s, server_hostname=host)
+        w_socket.settimeout(timeout)
+        w_socket.connect((host, int(port)))
+    else:
+        w_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        w_socket.settimeout(timeout)
+        w_socket.connect((host, int(port)))
+
+    w_socket.send(bytes(raw_request, encoding="latin1"))
+    data = w_socket.recv(4096).decode("latin1")
+        
+    if "transfer-encoding: chunked" in data.lower():
+        while True:
+            data += w_socket.recv(4096).decode("latin1")
+            if "0\r\n\r\n" in data:
+                break
+    elif "content-length: " in data.lower():
+        try:
+            data_length = int(data.lower().split("content-length: ")[1].split("\r\n")[0])
+            if data_length > 0:
+                response_body = ""
+                while True:
+                    response_body += w_socket.recv(4096).decode("latin1")
+                    if len(response_body) == data_length:
+                        data += response_body
+                        break
+        except Exception as error:
+            if "The read operation timed out" not in error:
+                print('send_raw  =>  ' + str(error))
+
+    w_socket.close()
+
+    return data
+
 def send_raw(raw_request, port, host, timeout, use_ssl):
     try:
-        if use_ssl:
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-            context.verify_mode = ssl.CERT_REQUIRED
-            context.check_hostname = True
-            context.load_default_certs()
-
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            w_socket = context.wrap_socket(s, server_hostname=host)
-            w_socket.settimeout(timeout)
-            w_socket.connect((host, int(port)))
-        else:
-            w_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            w_socket.settimeout(timeout)
-            w_socket.connect((host, int(port)))
-
-        w_socket.send(bytes(raw_request, encoding="latin1"))
-        data = w_socket.recv(4096).decode("latin1")
-        
-        if "transfer-encoding: chunked" in data.lower():
-            while True:
-                data += w_socket.recv(4096).decode("latin1")
-                if "0\r\n\r\n" in data:
-                    break
-        elif "content-length: " in data.lower():
-            try:
-                data_length = int(data.lower().split("content-length: ")[1].split("\r\n")[0])
-                if data_length > 0:
-                    response_body = ""
-                    while True:
-                        response_body += w_socket.recv(4096).decode("latin1")
-                        if len(response_body) == data_length:
-                            data += response_body
-                            break
-            except Exception as error:
-                if "The read operation timed out" not in error:
-                    print('send_raw  =>  ' + str(error))
-
-
-        w_socket.close()
+        request_function = send_raw_with_exceptions(raw_request, port, host, timeout, use_ssl)
+        data = request_function.result()
 
         return data
     except Exception as error:
-        if "Name or service not known" or "UnicodeError" in str(error):
+        error = str(error)
+        if "Name or service not known" in error or 'Task Timeout' in error or "UnicodeError" in error:
             return None
         exception(host + str(error), sys._getframe().f_code.co_name)
         return None
