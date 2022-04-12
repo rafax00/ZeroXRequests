@@ -96,7 +96,7 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                         data += response_body
                         break
         except Exception as error:
-            if "The read operation timed out" not in str(error):
+            if "timed out" not in str(error):
                 print('send_raw - body  =>  ' + str(error))
 
     w_socket.close()
@@ -113,7 +113,7 @@ def send_raw(raw_request, port, host, connection_timeout, use_ssl):
         str_error = str(error)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
-        exception(host + " " + str(error), sys._getframe().f_code.co_name)
+        #exception(host + " " + str(error), sys._getframe().f_code.co_name)
         return None
 
 def make_object(raw_response):
