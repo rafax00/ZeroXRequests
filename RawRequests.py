@@ -3,8 +3,8 @@ from . import RequestUtils
 import ssl
 import sys
 import gzip
-import signal
-from contextlib import contextmanager
+import multiprocessing.pool
+import functools
 
 line_separator = "\r\n"
 
@@ -61,22 +61,17 @@ def gzip_decode(data):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
-@contextmanager
-def timeout(time):
-    signal.signal(signal.SIGALRM, raise_timeout)
-    
-    signal.alarm(time)
+def timeout(max_timeout):
+    def timeout_decorator(item):
+        @functools.wraps(item)
+        def func_wrapper(*args, **kwargs):
+            pool = multiprocessing.pool.ThreadPool(processes=1)
+            async_result = pool.apply_async(item, args, kwargs)
+            return async_result.get(max_timeout)
+        return func_wrapper
+    return timeout_decorator
 
-    try:
-        yield
-    except TimeoutError:
-        pass
-    finally:
-        signal.signal(signal.SIGALRM, signal.SIG_IGN)
-
-def raise_timeout(signum, frame):
-    raise TimeoutError
-    
+@timeout(Options.timeout)
 def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
     if use_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
@@ -121,12 +116,12 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
 
 def send_raw(raw_request, port, host, connection_timeout, use_ssl):
     try:
-        with timeout(Options.timeout):
-            data = send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl)
+        data = send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl)
 
-            return data
+        return data
     except Exception as error:
         str_error = str(error)
+#        print(str_error)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
         #exception(host + " " + str(error), sys._getframe().f_code.co_name)
