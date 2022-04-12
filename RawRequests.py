@@ -60,7 +60,7 @@ def gzip_decode(data):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
-@concurrent.process(timeout=7)
+@concurrent.process(timeout=Options.timeout)
 def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
     if use_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
