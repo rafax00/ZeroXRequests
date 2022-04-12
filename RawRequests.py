@@ -3,7 +3,8 @@ from . import RequestUtils
 import ssl
 import sys
 import gzip
-from pebble import concurrent
+import signal
+from contextlib import contextmanager
 
 line_separator = "\r\n"
 
@@ -60,7 +61,22 @@ def gzip_decode(data):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
-@concurrent.process(timeout=Options.timeout)
+@contextmanager
+def timeout(time):
+    signal.signal(signal.SIGALRM, raise_timeout)
+    
+    signal.alarm(time)
+
+    try:
+        yield
+    except TimeoutError:
+        pass
+    finally:
+        signal.signal(signal.SIGALRM, signal.SIG_IGN)
+
+def raise_timeout(signum, frame):
+    raise TimeoutError
+    
 def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
     if use_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
@@ -105,10 +121,10 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
 
 def send_raw(raw_request, port, host, connection_timeout, use_ssl):
     try:
-        request_function = send_raw_with_exceptions(raw_request=raw_request, port=port, host=host, connection_timeout=connection_timeout, use_ssl=use_ssl)
-        data = request_function.result()
+        with timeout(Options.timeout):
+            data = send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl)
 
-        return data
+            return data
     except Exception as error:
         str_error = str(error)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
