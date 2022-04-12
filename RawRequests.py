@@ -60,8 +60,8 @@ def gzip_decode(data):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
-@concurrent.process(timeout=Options.timeout)
-def send_raw_with_exceptions(raw_request, port, host, timeout, use_ssl):
+@concurrent.process(timeout=7)
+def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
     if use_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         context.verify_mode = ssl.CERT_REQUIRED
@@ -70,11 +70,11 @@ def send_raw_with_exceptions(raw_request, port, host, timeout, use_ssl):
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         w_socket = context.wrap_socket(s, server_hostname=host)
-        w_socket.settimeout(timeout)
+        w_socket.settimeout(connection_timeout)
         w_socket.connect((host, int(port)))
     else:
         w_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        w_socket.settimeout(timeout)
+        w_socket.settimeout(connection_timeout)
         w_socket.connect((host, int(port)))
 
     w_socket.send(bytes(raw_request, encoding="latin1"))
@@ -96,24 +96,24 @@ def send_raw_with_exceptions(raw_request, port, host, timeout, use_ssl):
                         data += response_body
                         break
         except Exception as error:
-            if "The read operation timed out" not in error:
-                print('send_raw  =>  ' + str(error))
+            if "The read operation timed out" not in str(error):
+                print('send_raw - body  =>  ' + str(error))
 
     w_socket.close()
 
     return data
 
-def send_raw(raw_request, port, host, timeout, use_ssl):
+def send_raw(raw_request, port, host, connection_timeout, use_ssl):
     try:
-        request_function = send_raw_with_exceptions(raw_request, port, host, timeout, use_ssl)
+        request_function = send_raw_with_exceptions(raw_request=raw_request, port=port, host=host, connection_timeout=connection_timeout, use_ssl=use_ssl)
         data = request_function.result()
 
         return data
     except Exception as error:
-        error = str(error)
-        if "Name or service not known" in error or 'Task Timeout' in error or "UnicodeError" in error:
+        str_error = str(error)
+        if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
-        exception(host + str(error), sys._getframe().f_code.co_name)
+        exception(host + " " + str(error), sys._getframe().f_code.co_name)
         return None
 
 def make_object(raw_response):
