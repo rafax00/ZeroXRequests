@@ -3,8 +3,6 @@ from . import RequestUtils
 import ssl
 import sys
 import gzip
-import multiprocessing.pool
-import functools
 
 line_separator = "\r\n"
 
@@ -61,17 +59,6 @@ def gzip_decode(data):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
-def timeout(max_timeout):
-    def timeout_decorator(item):
-        @functools.wraps(item)
-        def func_wrapper(*args, **kwargs):
-            pool = multiprocessing.pool.ThreadPool(processes=1)
-            async_result = pool.apply_async(item, args, kwargs)
-            return async_result.get(max_timeout)
-        return func_wrapper
-    return timeout_decorator
-
-@timeout(Options.timeout)
 def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
     if use_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
