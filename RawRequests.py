@@ -91,7 +91,7 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
 
             response_body = ""
 
-            if len(split_body > 2):
+            if len(split_body) > 2:
                 for i in range(1, len(split_body)):
                     response_body += split_body[i]
 
