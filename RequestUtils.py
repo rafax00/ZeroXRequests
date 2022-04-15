@@ -63,8 +63,10 @@ def get_path_from_url(url):
         splited_url = url.split(url_base)
         if len(splited_url) > 1:
             path = splited_url[1]
-        if path == "":
-            path = "/"
+            
+        if not path.startswith('/'):
+            path = "/" + path
+         
         return path
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
