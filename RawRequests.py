@@ -122,7 +122,7 @@ def send_raw(raw_request, port, host, connection_timeout, use_ssl):
         return data
     except Exception as error:
         str_error = str(error)
-        print(str_error)
+        #print(str_error)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
         #exception(host + " " + str(error), sys._getframe().f_code.co_name)
