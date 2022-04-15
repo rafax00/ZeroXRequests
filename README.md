@@ -4,7 +4,7 @@ Raw Requests for python - without client-side security checking
 ## Intro
 With this lib, you can send invalid HTTP characters, invalid headers, duplicated headers, invalid methods, invalid pathnames, etc ...
 
-Very useful for HTTP Request Smuggling vulnerabilities, or others exploits that could not be done with HTTP libs for devs.
+Very useful for HTTP Request Smuggling vulnerabilities or others exploits that could not be exploited with HTTP libs for devs.
 
 ## How to use
 
