@@ -63,7 +63,8 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
     if use_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         context.verify_mode = ssl.CERT_REQUIRED
-        context.check_hostname = True
+        context.ca_certs = None
+        context.check_hostname = False
         context.load_default_certs()
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -77,7 +78,7 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
 
     w_socket.send(bytes(raw_request, encoding="latin1"))
     data = w_socket.recv(4096).decode("latin1")
-        
+
     if "transfer-encoding: chunked" in data.lower():
         while True:
             data += w_socket.recv(4096).decode("latin1")
@@ -86,13 +87,26 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
     elif "content-length: " in data.lower():
         try:
             data_length = int(data.lower().split("content-length: ")[1].split("\r\n")[0])
-            if data_length > 0:
-                response_body = ""
+            split_body = data.split("\r\n\r\n")
+
+            response_body = ""
+
+            if len(split_body > 2):
+                for i in range(1, len(split_body)):
+                    response_body += split_body[i]
+
+            elif len(split_body > 1):
+                response_body += split_body[1]
+
+            if len(response_body) >= data_length:
+                pass
+            elif data_length > 0:
                 while True:
                     response_body += w_socket.recv(4096).decode("latin1")
-                    if len(response_body) == data_length:
+                    if len(response_body) >= data_length:
                         data += response_body
                         break
+
         except Exception as error:
             if "timed out" not in str(error):
                 print('send_raw - body  =>  ' + str(error))
@@ -107,8 +121,8 @@ def send_raw(raw_request, port, host, connection_timeout, use_ssl):
 
         return data
     except Exception as error:
-        str_error = str(error)
-#        print(str_error)
+#        str_error = str(error)
+        print(str_error)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
         #exception(host + " " + str(error), sys._getframe().f_code.co_name)
