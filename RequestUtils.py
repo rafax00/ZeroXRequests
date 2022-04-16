@@ -16,6 +16,31 @@ def calculate_content_lentgh(body):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
+def add_path_to_url(url, pathname):
+    try:
+        port = get_string_port_from_url(url)
+        host_value = get_host_from_url(url)
+        scheme = get_scheme_from_url(url)
+        old_path = get_path_from_url(url).split("?")[0].split("#")[0]
+        
+        if old_path.endswith("/"):
+            new_path = old_path + pathname
+        else:
+            new_path = old_path + "/" + pathname
+            
+        query_parameters = url.split("?")
+        string_query_parameters = ""
+        if len(query_parameters) > 1:
+            string_query_parameters = "?"
+            for i in range(1, len(query_parameters)):
+                string_query_parameters += query_parameters[i]
+                
+        new_url = scheme + host_value + port + new_path + string_query_parameters
+        
+        return new_url
+    except Exception as error:
+        exception(error, sys._getframe().f_code.co_name)
+
 def get_url_port(url):
     try:
         scheme = get_scheme_from_url(url)
