@@ -109,7 +109,8 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
 
         except Exception as error:
             if "timed out" not in str(error):
-                print('send_raw - body  =>  ' + str(error))
+                #print('send_raw - body  =>  ' + str(error))
+                pass
 
     w_socket.close()
 
