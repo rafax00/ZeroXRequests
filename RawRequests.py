@@ -77,40 +77,27 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
         w_socket.connect((host, int(port)))
 
     w_socket.send(bytes(raw_request, encoding="latin1"))
-    data = w_socket.recv(4096).decode("latin1")
+    data = w_socket.recv(8096).decode("latin1")
 
     if "transfer-encoding: chunked" in data.lower():
-        while True:
-            data += w_socket.recv(4096).decode("latin1")
-            if "0\r\n\r\n" in data:
-                break
+        data += w_socket.recv(54096).decode("latin1")
+        
     elif "content-length: " in data.lower():
-        try:
-            data_length = int(data.lower().split("content-length: ")[1].split("\r\n")[0])
+        data_length = int(data.lower().split("content-length: ")[1].split("\n")[0].split("\r")[0])
+            
+        if data_length > 0:
             split_body = data.split("\r\n\r\n")
 
             response_body = ""
 
-            if len(split_body) > 2:
+            if len(split_body) > 1:
                 for i in range(1, len(split_body)):
                     response_body += split_body[i]
 
-            elif len(split_body) > 1:
-                response_body += split_body[1]
+            if len(response_body) < data_length:
+                response_body += w_socket.recv(54096).decode("latin1")
+                data += response_body
 
-            if len(response_body) >= data_length:
-                pass
-            elif data_length > 0:
-                while True:
-                    response_body += w_socket.recv(4096).decode("latin1")
-                    if len(response_body) >= data_length:
-                        data += response_body
-                        break
-
-        except Exception as error:
-            if "timed out" not in str(error):
-                #print('send_raw - body  =>  ' + str(error))
-                pass
 
     w_socket.close()
 
