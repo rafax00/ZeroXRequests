@@ -94,9 +94,9 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                 for i in range(1, len(split_body)):
                     response_body += split_body[i]
             
-            for i in range(0, 5):
+            for i in range(0, 10):
                 if len(response_body) < data_length:
-                    response_body += w_socket.recv(24096).decode("latin1")
+                    response_body += w_socket.recv(2096).decode("latin1")
                     data += response_body
                 else:
                     break
