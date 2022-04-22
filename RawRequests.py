@@ -80,7 +80,11 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
     data = w_socket.recv(8096).decode("latin1")
 
     if "transfer-encoding: chunked" in data.lower():
-        data += w_socket.recv(54096).decode("latin1")
+        for i in range(0, 10):
+            chunk = w_socket.recv(2096).decode("latin1")
+            data += chunk
+            if "\r\n0\r\n\r\n" in chunk:
+                break
         
     elif "content-length: " in data.lower():
         data_length = int(data.lower().split("content-length: ")[1].split("\n")[0].split("\r")[0])
