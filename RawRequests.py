@@ -77,14 +77,11 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
         w_socket.connect((host, int(port)))
 
     w_socket.send(bytes(raw_request, encoding="latin1"))
-    data = w_socket.recv(8096).decode("latin1")
+    data = w_socket.recv(20096).decode("latin1")
 
     if "transfer-encoding: chunked" in data.lower():
-        for i in range(0, 10):
-            chunk = w_socket.recv(2096).decode("latin1")
-            data += chunk
-            if "\r\n0\r\n\r\n" in chunk:
-                break
+        chunk = w_socket.recv(20096).decode("latin1")
+        data += chunk
         
     elif "content-length: " in data.lower():
         data_length = int(data.lower().split("content-length: ")[1].split("\n")[0].split("\r")[0])
@@ -98,13 +95,10 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                 for i in range(1, len(split_body)):
                     response_body += split_body[i]
             
-            for i in range(0, 10):
-                if len(response_body) < data_length:
-                    response_body += w_socket.recv(2096).decode("latin1")
-                    data += response_body
-                else:
-                    break
-
+            if len(response_body) < data_length:
+                response_body += w_socket.recv(20096).decode("latin1")
+                data += response_body
+                
 
     w_socket.close()
 
