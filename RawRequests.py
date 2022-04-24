@@ -60,12 +60,14 @@ def gzip_decode(data):
         exception(error, sys._getframe().f_code.co_name)
 
 def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
+    #print(raw_request)
+
     if use_ssl:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.verify_mode = ssl.CERT_REQUIRED
-        context.ca_certs = None
-        context.check_hostname = False
-        context.load_default_certs()
+        context = ssl._create_unverified_context()
+        #context.verify_mode = ssl.CERT_REQUIRED
+        #context.ca_certs = None
+        #context.check_hostname = False
+        #context.load_default_certs()
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         w_socket = context.wrap_socket(s, server_hostname=host)
@@ -77,10 +79,10 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
         w_socket.connect((host, int(port)))
 
     w_socket.send(bytes(raw_request, encoding="latin1"))
-    data = w_socket.recv(20096).decode("latin1")
+    data = w_socket.recv(6096).decode("latin1")
 
     if "transfer-encoding: chunked" in data.lower():
-        chunk = w_socket.recv(20096).decode("latin1")
+        chunk = w_socket.recv(4096).decode("latin1")
         data += chunk
         
     elif "content-length: " in data.lower():
@@ -96,7 +98,7 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                     response_body += split_body[i]
             
             if len(response_body) < data_length:
-                response_body += w_socket.recv(20096).decode("latin1")
+                response_body += w_socket.recv(4096).decode("latin1")
                 data += response_body
                 
 
@@ -111,7 +113,7 @@ def send_raw(raw_request, port, host, connection_timeout, use_ssl):
         return data
     except Exception as error:
         str_error = str(error)
-        #print(str_error)
+        #print(str_error + " " + host)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
         #exception(host + " " + str(error), sys._getframe().f_code.co_name)
