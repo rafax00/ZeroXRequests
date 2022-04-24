@@ -81,27 +81,29 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
     w_socket.send(bytes(raw_request, encoding="latin1"))
     data = w_socket.recv(6096).decode("latin1")
 
-    if "transfer-encoding: chunked" in data.lower():
-        chunk = w_socket.recv(4096).decode("latin1")
-        data += chunk
-        
-    elif "content-length: " in data.lower():
-        data_length = int(data.lower().split("content-length: ")[1].split("\n")[0].split("\r")[0])
+    try:
+        if "transfer-encoding: chunked" in data.lower():
+            chunk = w_socket.recv(4096).decode("latin1")
+            data += chunk
             
-        if data_length > 0:
-            split_body = data.split("\r\n\r\n")
-
-            response_body = ""
-
-            if len(split_body) > 1:
-                for i in range(1, len(split_body)):
-                    response_body += split_body[i]
-            
-            if len(response_body) < data_length:
-                response_body += w_socket.recv(4096).decode("latin1")
-                data += response_body
+        elif "content-length: " in data.lower():
+            data_length = int(data.lower().split("content-length: ")[1].split("\n")[0].split("\r")[0])
                 
+            if data_length > 0:
+                split_body = data.split("\r\n\r\n")
 
+                response_body = ""
+
+                if len(split_body) > 1:
+                    for i in range(1, len(split_body)):
+                        response_body += split_body[i]
+                
+                if len(response_body) < data_length:
+                    response_body += w_socket.recv(4096).decode("latin1")
+                    data += response_body
+                    
+    except Exception as error:
+        print(error)
     w_socket.close()
 
     return data
