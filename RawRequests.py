@@ -103,7 +103,9 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                     data += response_body
                     
     except Exception as error:
-        print(error)
+        #print(error)
+        pass
+        
     w_socket.close()
 
     return data
