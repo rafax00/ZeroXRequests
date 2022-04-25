@@ -60,14 +60,8 @@ def gzip_decode(data):
         exception(error, sys._getframe().f_code.co_name)
 
 def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ssl):
-    #print(raw_request)
-
     if use_ssl:
         context = ssl._create_unverified_context()
-        #context.verify_mode = ssl.CERT_REQUIRED
-        #context.ca_certs = None
-        #context.check_hostname = False
-        #context.load_default_certs()
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         w_socket = context.wrap_socket(s, server_hostname=host)
@@ -120,7 +114,6 @@ def send_raw(raw_request, port, host, connection_timeout, use_ssl):
         #print(str_error + " " + host)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
-        #exception(host + " " + str(error), sys._getframe().f_code.co_name)
         return None
 
 def make_object(raw_response):
