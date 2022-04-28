@@ -59,6 +59,43 @@ def get_url_port(url):
     except Exception as error:
         exception(error, sys._getframe().f_code.co_name)
 
+def remove_last_path_from_url(url):
+    try:
+        scheme = get_scheme_from_url(url)
+        splited_scheme_url = url[len(scheme):]
+        splited_parameters_url = url.split("?")[0].split("#")[0]
+        splited_paths = splited_scheme_url.split("/")
+        
+        new_url = scheme
+        if len(splited_paths) > 1:
+            for i in range(0, len(splited_paths)-1):
+                new_url += splited_paths[i] + "/"
+        else:
+            new_url += splited_paths[0] + "/"
+                
+        splited_query_parameters = url.split("#")[0].split("?")
+        if len(splited_query_parameters) > 1:
+            new_url += "?"
+            for i in range(1, len(splited_query_parameters)):
+                if i == len(splited_query_parameters)-1:
+                    new_url += splited_query_parameters[i]
+                else:
+                    new_url += splited_query_parameters[i] + "?"
+        
+        splited_hash = url.split("#")
+        if len(splited_hash) > 1:
+            new_url += "#"
+            for i in range(1, len(splited_hash)):
+                if i == len(splited_hash)-1:
+                    new_url += splited_hash[i]
+                else:
+                    new_url += splited_hash[i] + "#"
+        
+        return new_url
+    except Exception as error:
+        exception(error, sys._getframe().f_code.co_name)
+
+
 def get_path_folder_from_url(url):
     try:
         folder = url.rsplit('/',1)
