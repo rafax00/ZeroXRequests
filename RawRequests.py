@@ -114,7 +114,6 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                     
                 data = data + chunk;
     except Exception as error:
-        print(error) #TODO REMOVE THIS LINE
         pass
         
     w_socket.close()
