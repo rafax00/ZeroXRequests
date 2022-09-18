@@ -71,33 +71,50 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
         w_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         w_socket.settimeout(connection_timeout)
         w_socket.connect((host, int(port)))
-
-    w_socket.send(bytes(raw_request, encoding="latin1"))
-    data = w_socket.recv(6096).decode("latin1")
-
+    
+    w_socket.sendall(bytes(raw_request, encoding="latin1"))
+    
+    data = w_socket.recv(4096).decode("latin1")
+    
+    data_received = False
+    
     try:
-        if "transfer-encoding: chunked" in data.lower():
-            chunk = w_socket.recv(4096).decode("latin1")
-            data += chunk
+        headers_data = data.split('\r\n\r\n')[0]
+        expected_data_length = None
+        
+        try:
+            if '\r\ncontent-length:' in headers_data.lower():
+                expected_data_length = int(headers_data.lower().split('\r\ncontent-length:')[1].split('\r')[0].split('\n')[0].replace(' ', ''))
+            elif '\r\ntransfer-encoding: chunked' in headers_data.lower():
+                expected_data_length = "chunked"
+        except:
+            pass
             
-        elif "content-length: " in data.lower():
-            data_length = int(data.lower().split("content-length: ")[1].split("\n")[0].split("\r")[0])
+        if expected_data_length != None and expected_data_length != "chunked":
+            if len(data.replace(headers_data+'\r\n\r\n', '')) + 2 >= expected_data_length:
+                data_received = True
                 
-            if data_length > 0:
-                split_body = data.split("\r\n\r\n")
-
-                response_body = ""
-
-                if len(split_body) > 1:
-                    for i in range(1, len(split_body)):
-                        response_body += split_body[i]
+        elif expected_data_length == "chunked" and "0\r\n\r\n" in data.replace(headers_data+'\r\n\r\n', ''):
+            data_received = True
+        
+        if not data_received:    
+            while True:
+                if expected_data_length != None and expected_data_length != "chunked":
+                    if len(data.replace(headers_data+'\r\n\r\n', '')) + 2 >= expected_data_length:
+                        break
+            
+                chunk = w_socket.recv(4096).decode("latin1")
                 
-                if len(response_body) < data_length:
-                    response_body += w_socket.recv(4096).decode("latin1")
-                    data += response_body
+                if expected_data_length == "chunked" and "0\r\n\r\n" in chunk:
+                    data = data + chunk;
+                    break
                     
+                elif len(chunk) == 0:
+                    break
+                    
+                data = data + chunk;
     except Exception as error:
-        #print(error)
+        print(error) #TODO REMOVE THIS LINE
         pass
         
     w_socket.close()
@@ -111,7 +128,6 @@ def send_raw(raw_request, port, host, connection_timeout, use_ssl):
         return data
     except Exception as error:
         str_error = str(error)
-        #print(str_error + " " + host)
         if "Name or service not known" in str_error or 'Task Timeout' in str_error or "UnicodeError" in str_error:
             return None
         return None
