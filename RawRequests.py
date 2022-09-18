@@ -118,8 +118,7 @@ def send_http2(url, headers, body, timeout):
         
         return final_response
         
-    except Exception as error:
-        print(error)
+    except:
         return None
         
 def gzip_decode(data):
