@@ -2,6 +2,7 @@ import socket
 from . import RequestUtils
 import ssl
 import sys
+import certifi
 import h2.connection
 import h2.events
 import gzip
@@ -50,7 +51,7 @@ def send_http2(url, headers, body, timeout):
     host = RequestUtils.get_host_from_url(url)
     port = RequestUtils.get_url_port(url)
     
-    context = ssl._create_unverified_context()
+    context = ssl.create_default_context(cafile=certifi.where()) #ssl._create_unverified_context()
     context.set_alpn_protocols(['h2'])
     
     try:   
