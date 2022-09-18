@@ -113,7 +113,7 @@ def send_raw_with_exceptions(raw_request, port, host, connection_timeout, use_ss
                     break
                     
                 data = data + chunk;
-    except Exception as error:
+    except:
         pass
         
     w_socket.close()
