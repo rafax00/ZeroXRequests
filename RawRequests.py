@@ -52,69 +52,74 @@ def send_http2(url, headers, body, timeout):
     
     context = ssl._create_unverified_context()
     context.set_alpn_protocols(['h2'])
-        
-    s = socket.create_connection((host, int(port)))
-        
-    w_socket = context.wrap_socket(s, server_hostname=host)
-    w_socket.settimeout(timeout)
-       
-    c = h2.connection.H2Connection()
-    c.initiate_connection()
-    w_socket.sendall(c.data_to_send())
-        
-    c.send_headers(1, headers)
     
-    if body != '':
-        c.send_data(stream_id=1, data=bytes(body, encoding="latin1"))
-        
-    w_socket.sendall(c.data_to_send())
-    
-    response_headers = {}
-    response_body = b''
-        
-    response_stream_ended = False
-    while not response_stream_ended:
-        # read raw data from the socket
-        data = w_socket.recv(65536 * 1024)
-        if not data:
-            break
-
-            # feed raw data into h2, and process resulting events
-        events = c.receive_data(data)
+    try:   
+        s = socket.create_connection((host, int(port)))
             
-        for event in events:
-            if isinstance(event, h2.events.StreamReset):
-                print(event) #TODO REMOVE THIS LINE
-                exit(0)
-                
-            elif isinstance(event, h2.events.ResponseReceived):
-                for key, value in event.headers:
-                    response_headers.update({key: value})
-                        
-            elif isinstance(event, h2.events.DataReceived):
-                # update flow control so the server doesn't starve us
-                c.acknowledge_received_data(event.flow_controlled_length, 1)
-                # more response response_body data received
-                response_body += event.data
-                    
-            elif isinstance(event, h2.events.StreamEnded):
-                # response response_body completed, let's exit the loop
-                response_stream_ended = True
+        w_socket = context.wrap_socket(s, server_hostname=host)
+        w_socket.settimeout(timeout)
+           
+        c = h2.connection.H2Connection()
+        c.initiate_connection()
+        w_socket.sendall(c.data_to_send())
+            
+        c.send_headers(1, headers)
+        
+        if body != '':
+            c.send_data(stream_id=1, data=bytes(body, encoding="latin1"))
+            
+        w_socket.sendall(c.data_to_send())
+        
+        response_headers = {}
+        response_body = b''
+            
+        response_stream_ended = False
+        while not response_stream_ended:
+            # read raw data from the socket
+            data = w_socket.recv(65536 * 1024)
+            if not data:
                 break
+
+                # feed raw data into h2, and process resulting events
+            events = c.receive_data(data)
+                
+            for event in events:
+                if isinstance(event, h2.events.StreamReset):
+                    print(event) #TODO REMOVE THIS LINE
+                    exit(0)
                     
-        # send any pending data to the server
+                elif isinstance(event, h2.events.ResponseReceived):
+                    for key, value in event.headers:
+                        response_headers.update({key: value})
+                            
+                elif isinstance(event, h2.events.DataReceived):
+                    # update flow control so the server doesn't starve us
+                    c.acknowledge_received_data(event.flow_controlled_length, 1)
+                    # more response response_body data received
+                    response_body += event.data
+                        
+                elif isinstance(event, h2.events.StreamEnded):
+                    # response response_body completed, let's exit the loop
+                    response_stream_ended = True
+                    break
+                        
+            # send any pending data to the server
+            w_socket.sendall(c.data_to_send())
+
+        final_response = {'headers':response_headers, 'text':response_body.decode('latin1')}
+
+        # tell the server we are closing the h2 connection
+        c.close_connection()
         w_socket.sendall(c.data_to_send())
 
-    final_response = {'headers':response_headers, 'text':response_body.decode('latin1')}
-
-    # tell the server we are closing the h2 connection
-    c.close_connection()
-    w_socket.sendall(c.data_to_send())
-
-    # close the socket
-    w_socket.close()
+        # close the socket
+        w_socket.close()
         
-    return final_response
+        return final_response
+        
+    except Exception as error:
+        print(error)
+        return None
         
 def gzip_decode(data):
     try:
