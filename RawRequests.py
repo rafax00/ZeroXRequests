@@ -86,8 +86,11 @@ def send_http2(url, headers, body, timeout):
                 
             for event in events:
                 if isinstance(event, h2.events.StreamReset):
-                    print(event) #TODO REMOVE THIS LINE
-                    exit(0)
+                    #print(event) #TODO REMOVE THIS LINE
+                    c.close_connection()
+                    w_socket.close()
+                    
+                    return None
                     
                 elif isinstance(event, h2.events.ResponseReceived):
                     for key, value in event.headers:
