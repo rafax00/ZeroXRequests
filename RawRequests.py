@@ -119,6 +119,9 @@ def send_http2(url, headers, body, timeout):
         # close the socket
         w_socket.close()
         
+        if len(final_response['headers']) == 0:
+            return None
+        
         return final_response
         
     except:
