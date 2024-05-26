@@ -85,6 +85,7 @@ def send_http2(url, headers, body, timeout):
             events = c.receive_data(data)
                 
             for event in events:
+                print(event)
                 if isinstance(event, h2.events.StreamReset):
                     #print(event) #TODO REMOVE THIS LINE
                     c.close_connection()
@@ -124,7 +125,8 @@ def send_http2(url, headers, body, timeout):
         
         return final_response
         
-    except:
+    except Exception as error:
+        print(error)
         return None
         
 def gzip_decode(data):

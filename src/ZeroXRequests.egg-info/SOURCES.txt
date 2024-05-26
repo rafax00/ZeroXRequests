@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+setup.py
+src/ZeroXRequests/RawRequests.py
+src/ZeroXRequests/RequestUtils.py
+src/ZeroXRequests/__init__.py
+src/ZeroXRequests.egg-info/PKG-INFO
+src/ZeroXRequests.egg-info/SOURCES.txt
+src/ZeroXRequests.egg-info/dependency_links.txt
+src/ZeroXRequests.egg-info/requires.txt
+src/ZeroXRequests.egg-info/top_level.txt
